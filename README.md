@@ -1,45 +1,81 @@
-# pet-diary
+# 🐾 pet-diary
 
-An AI pet diary prototype: watches home-camera / phone video clips of your pet and writes a first-person diary entry about their day.
+> *"Dear diary, today I chased the red dot again. I almost got it this time."* — 🐱
 
-## Pipeline
+Ever wondered what your cat did all day while you were at work?
+**pet-diary** watches your home-camera clips and writes your pet's day as a diary —
+in your pet's own voice. 🐱🐶🐰
 
 ```
-video clips ──ffmpeg──▶ keyframes ──Claude vision──▶ per-clip observations ──Claude──▶ diary.md
+ /\_/\      ┌─────────────┐      ┌──────────────┐      📔
+( o.o ) ──▶ │ 🎬 keyframes │ ──▶ │ 👀 VLM looks  │ ──▶  diary.md
+ > ^ <      └─────────────┘      └──────────────┘
+home cam        ffmpeg            Qwen2.5-VL / Claude
 ```
 
-1. **keyframes** — extracts up to 6 keyframes per clip via scene-change detection (falls back to uniform temporal sampling when the clip is mostly one scene)
-2. **caption** — sends each clip's keyframes in a single vision request and produces a factual observation log for the clip
-3. **diary** — composes all of the day's observations into one first-person diary entry (markdown)
+## ✨ What it does
 
-Steps 2 and 3 call the Claude API (`claude-opus-4-8`), so an Anthropic API key is required. Step 1 runs fully locally.
+1. 🎬 **keyframes** — picks up to 6 snapshots per clip (scene-change detection, with uniform sampling as fallback)
+2. 👀 **caption** — a vision-language model looks at each clip and writes an observation log *("a grey tabby is hunting the laser dot...")*
+3. 📔 **diary** — all observations become one first-person diary entry, written by your pet
 
-## Setup
+Clips where no furry friend shows up are politely skipped. 🙈
+
+## 🤖 Backends
+
+| Backend | Model | Needs |
+|---|---|---|
+| `local` *(default)* | Qwen2.5-VL-7B on your GPU | ~16GB VRAM, no API key 🎉 |
+| `claude` | Claude API (`claude-opus-4-8`) | `ANTHROPIC_API_KEY` |
+
+## 🛠️ Setup
 
 ```bash
 python3 -m venv .venv
-.venv/bin/pip install -r requirements.txt
-export ANTHROPIC_API_KEY=sk-ant-...
+.venv/bin/pip install -r requirements.txt          # + torch/transformers for local backend
 ```
 
-Requires `ffmpeg` / `ffprobe` on PATH.
+Requires `ffmpeg` / `ffprobe` on PATH. 🍿
 
-## Run
+## 🚀 Run
 
 ```bash
-.venv/bin/python -m pet_diary data/samples --out outputs --date 2026-07-21
+.venv/bin/python -m pet_diary data/samples --date 2026-07-21 --lang ko
 ```
 
-Outputs:
-- `outputs/keyframes/` — extracted keyframes
-- `outputs/<clip>.caption.txt` — per-clip observation logs
-- `outputs/diary.md` — the diary entry
+- `--lang ko|en` — diary language 🇰🇷/🇺🇸
+- `--backend local|claude` — pick your brain 🧠
+- `--max-frames 6` — snapshots per clip 📸
 
-## Sample data
+Then open `outputs/diary.md` and meet your pet's inner monologue:
 
-Sample videos under `data/samples/` are from Wikimedia Commons (CC BY / CC BY-SA) — see [ATTRIBUTION.md](data/samples/ATTRIBUTION.md). The video files themselves are gitignored; re-download them from the linked source pages.
+> **고양이의 하루일기** 🐱
+> 오늘은 정말 재미있었어! 아침부터 레이저 포인트를 쫓아 다녔어.
+> 그 작은 빨간 점이 벽을 따라 올라가는 걸 볼 때마다 나도 모르게 몸이 움직였어. …
+> **오늘의 기분:** 오늘은 참 행복한 하루였어! 💛
 
-## Notes
+## 📁 Outputs
 
-- Diary output language is currently Korean (see the prompts in `pet_diary/caption.py` and `pet_diary/diary.py`).
-- Planned: motion-triggered event clipping for long recordings, best-shot album selection, local VLM backend option.
+```
+outputs/
+├── keyframes/            📸 the snapshots
+├── <clip>.caption.txt    👀 what the VLM saw
+└── diary.md              📔 today's masterpiece
+```
+
+## 🐈 Sample data
+
+Cat videos under `data/samples/` are from Wikimedia Commons (CC BY / CC BY-SA) —
+see [ATTRIBUTION.md](data/samples/ATTRIBUTION.md). Video files are gitignored;
+grab them from the linked source pages.
+
+## 🗺️ Roadmap
+
+- [ ] 🎥 Motion-triggered event clipping for long recordings (feed it a whole day!)
+- [ ] 🏆 Best-shot album — the day's cutest moments, embedded in the diary
+- [ ] 🐱🐱 Multi-pet identity ("was it Nabi or Coco who ate the churu?")
+- [ ] 📬 Daily diary delivery via messenger bot
+
+---
+
+Made with 💖 (and a lot of cat videos)
