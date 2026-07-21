@@ -1,6 +1,6 @@
 # pet-diary
 
-홈캠/폰 영상에서 반려동물의 하루를 관찰해 1인칭 일기로 써주는 AI 펫 다이어리 프로토타입.
+An AI pet diary prototype: watches home-camera / phone video clips of your pet and writes a first-person diary entry about their day.
 
 ## Pipeline
 
@@ -8,19 +8,21 @@
 video clips ──ffmpeg──▶ keyframes ──Claude vision──▶ per-clip observations ──Claude──▶ diary.md
 ```
 
-1. **keyframes** — 클립마다 장면 전환 감지(부족하면 균등 샘플링)로 키프레임 최대 6장 추출
-2. **caption** — 키프레임들을 한 번의 vision 요청으로 보내 클립별 관찰 기록 생성
-3. **diary** — 하루치 관찰 기록을 모아 반려동물 1인칭 일기(markdown) 작성
+1. **keyframes** — extracts up to 6 keyframes per clip via scene-change detection (falls back to uniform temporal sampling when the clip is mostly one scene)
+2. **caption** — sends each clip's keyframes in a single vision request and produces a factual observation log for the clip
+3. **diary** — composes all of the day's observations into one first-person diary entry (markdown)
+
+Steps 2 and 3 call the Claude API (`claude-opus-4-8`), so an Anthropic API key is required. Step 1 runs fully locally.
 
 ## Setup
 
 ```bash
 python3 -m venv .venv
-.venv/bin/pip install anthropic
+.venv/bin/pip install -r requirements.txt
 export ANTHROPIC_API_KEY=sk-ant-...
 ```
 
-ffmpeg/ffprobe가 설치되어 있어야 합니다.
+Requires `ffmpeg` / `ffprobe` on PATH.
 
 ## Run
 
@@ -28,11 +30,16 @@ ffmpeg/ffprobe가 설치되어 있어야 합니다.
 .venv/bin/python -m pet_diary data/samples --out outputs --date 2026-07-21
 ```
 
-출력:
-- `outputs/keyframes/` — 추출된 키프레임
-- `outputs/<clip>.caption.txt` — 클립별 관찰 기록
-- `outputs/diary.md` — 오늘의 일기
+Outputs:
+- `outputs/keyframes/` — extracted keyframes
+- `outputs/<clip>.caption.txt` — per-clip observation logs
+- `outputs/diary.md` — the diary entry
 
 ## Sample data
 
-`data/samples/`의 영상 출처와 라이선스는 [ATTRIBUTION.md](data/samples/ATTRIBUTION.md) 참고 (Wikimedia Commons, CC BY / CC BY-SA).
+Sample videos under `data/samples/` are from Wikimedia Commons (CC BY / CC BY-SA) — see [ATTRIBUTION.md](data/samples/ATTRIBUTION.md). The video files themselves are gitignored; re-download them from the linked source pages.
+
+## Notes
+
+- Diary output language is currently Korean (see the prompts in `pet_diary/caption.py` and `pet_diary/diary.py`).
+- Planned: motion-triggered event clipping for long recordings, best-shot album selection, local VLM backend option.
