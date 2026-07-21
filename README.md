@@ -71,7 +71,7 @@ grab them from the linked source pages.
 
 ## 🗺️ Roadmap
 
-- [ ] 🎥 Motion-triggered event clipping for long recordings (feed it a whole day!)
+- [x] 🎥 Motion-triggered event clipping for long recordings (feed it a whole day!)
 - [ ] 🏆 Best-shot album — the day's cutest moments, embedded in the diary
 - [ ] 🐱🐱 Multi-pet identity ("was it Nabi or Coco who ate the churu?")
 - [ ] 📬 Daily diary delivery via messenger bot
