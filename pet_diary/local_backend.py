@@ -2,7 +2,7 @@
 
 from pathlib import Path
 
-from .prompts import CAPTION_SYSTEM, DIARY_SYSTEM, caption_user_text, diary_user_text
+from .prompts import CAPTION_SYSTEM, caption_user_text, diary_system, diary_user_text
 
 MODEL_ID = "Qwen/Qwen2.5-VL-7B-Instruct"
 
@@ -37,7 +37,14 @@ class LocalVLMBackend:
             return_tensors="pt",
         ).to(self.model.device)
 
-        output_ids = self.model.generate(**inputs, max_new_tokens=max_new_tokens)
+        output_ids = self.model.generate(
+            **inputs,
+            max_new_tokens=max_new_tokens,
+            do_sample=True,
+            temperature=0.7,
+            top_p=0.9,
+            repetition_penalty=1.1,
+        )
         trimmed = [
             out[len(inp):] for inp, out in zip(inputs.input_ids, output_ids)
         ]
@@ -48,11 +55,11 @@ class LocalVLMBackend:
     def caption_clip(self, clip_name: str, frames: list[Path]) -> str:
         content: list[dict] = []
         for i, frame in enumerate(frames, 1):
-            content.append({"type": "text", "text": f"[프레임 {i}/{len(frames)}]"})
+            content.append({"type": "text", "text": f"[Frame {i}/{len(frames)}]"})
             content.append({"type": "image", "image": f"file://{frame.resolve()}"})
         content.append({"type": "text", "text": caption_user_text(clip_name)})
         return self._chat(CAPTION_SYSTEM, content, max_new_tokens=512)
 
-    def write_diary(self, date_label: str, observations: list[str]) -> str:
-        content = [{"type": "text", "text": diary_user_text(date_label, observations)}]
-        return self._chat(DIARY_SYSTEM, content, max_new_tokens=1024)
+    def write_diary(self, date_label: str, observations: list[str], lang: str = "ko") -> str:
+        content = [{"type": "text", "text": diary_user_text(date_label, observations, lang)}]
+        return self._chat(diary_system(lang), content, max_new_tokens=1024)

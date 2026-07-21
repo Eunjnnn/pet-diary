@@ -5,7 +5,7 @@ from pathlib import Path
 
 import anthropic
 
-from .prompts import CAPTION_SYSTEM, DIARY_SYSTEM, caption_user_text, diary_user_text
+from .prompts import CAPTION_SYSTEM, caption_user_text, diary_system, diary_user_text
 
 MODEL = "claude-opus-4-8"
 
@@ -29,7 +29,7 @@ class ClaudeBackend:
     def caption_clip(self, clip_name: str, frames: list[Path]) -> str:
         content: list[dict] = []
         for i, frame in enumerate(frames, 1):
-            content.append({"type": "text", "text": f"[프레임 {i}/{len(frames)}]"})
+            content.append({"type": "text", "text": f"[Frame {i}/{len(frames)}]"})
             content.append(_image_block(frame))
         content.append({"type": "text", "text": caption_user_text(clip_name)})
 
@@ -41,14 +41,14 @@ class ClaudeBackend:
         )
         return self._text_of(response)
 
-    def write_diary(self, date_label: str, observations: list[str]) -> str:
+    def write_diary(self, date_label: str, observations: list[str], lang: str = "ko") -> str:
         response = self.client.messages.create(
             model=self.model,
             max_tokens=2048,
-            system=DIARY_SYSTEM,
+            system=diary_system(lang),
             messages=[{
                 "role": "user",
-                "content": diary_user_text(date_label, observations),
+                "content": diary_user_text(date_label, observations, lang),
             }],
         )
         return self._text_of(response)
