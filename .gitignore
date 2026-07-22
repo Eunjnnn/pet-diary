@@ -6,3 +6,4 @@ data/samples/*.webm
 data/samples/*.mp4
 .env
 web_jobs/
+competitions_2026.txt
