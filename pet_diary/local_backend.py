@@ -60,6 +60,7 @@ class LocalVLMBackend:
         content.append({"type": "text", "text": caption_user_text(clip_name)})
         return self._chat(CAPTION_SYSTEM, content, max_new_tokens=512)
 
-    def write_diary(self, date_label: str, observations: list[str], lang: str = "ko") -> str:
+    def write_diary(self, date_label: str, observations: list[str], lang: str = "ko",
+                    pet_name: str | None = None) -> str:
         content = [{"type": "text", "text": diary_user_text(date_label, observations, lang)}]
-        return self._chat(diary_system(lang), content, max_new_tokens=1024)
+        return self._chat(diary_system(lang, pet_name), content, max_new_tokens=1024)

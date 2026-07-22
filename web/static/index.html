@@ -34,7 +34,7 @@
   .picked { margin-top: 10px; font-size: .9rem; color: var(--ink); }
   .row { display: flex; gap: 12px; margin-top: 18px; flex-wrap: wrap; }
   .row label { font-size: .85rem; color: var(--sub); display: block; margin-bottom: 4px; }
-  input[type=date], select {
+  input[type=date], input[type=text], select {
     padding: 9px 12px; border: 1.5px solid #eadbc8; border-radius: 10px;
     background: #fff; color: var(--ink); font-size: .95rem;
   }
@@ -79,6 +79,8 @@
     <div class="picked" id="picked"></div>
   </div>
   <div class="row">
+    <div><label>🐱 우리 애 이름</label>
+      <input type="text" id="petName" placeholder="나비" maxlength="20"></div>
     <div><label>📅 날짜</label><input type="date" id="date"></div>
     <div><label>🌏 일기 언어</label>
       <select id="lang"><option value="ko">한국어</option><option value="en">English</option></select>
@@ -132,6 +134,7 @@ go.addEventListener('click', async () => {
   files.forEach(f => fd.append('files', f));
   fd.append('date', dateEl.value || '오늘');
   fd.append('lang', document.getElementById('lang').value);
+  fd.append('pet_name', document.getElementById('petName').value.trim());
 
   document.getElementById('uploadCard').classList.add('hidden');
   document.getElementById('statusCard').classList.remove('hidden');

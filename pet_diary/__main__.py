@@ -37,6 +37,7 @@ def main() -> int:
     parser.add_argument("--out", type=Path, default=Path("outputs"), help="Output directory")
     parser.add_argument("--date", default="오늘", help="Date label for the diary entry")
     parser.add_argument("--lang", choices=["ko", "en"], default="ko", help="Diary language")
+    parser.add_argument("--name", default=None, help="Pet name (diary is written as this pet)")
     parser.add_argument("--max-frames", type=int, default=6, help="Keyframes per clip")
     args = parser.parse_args()
 
@@ -46,7 +47,7 @@ def main() -> int:
     try:
         result = generate_diary(
             args.video_path, backend, args.out,
-            date_label=args.date, lang=args.lang, max_frames=args.max_frames,
+            date_label=args.date, lang=args.lang, pet_name=args.name, max_frames=args.max_frames,
             log=lambda msg: print(f"[pipeline ] {msg}"),
         )
     except ValueError as e:

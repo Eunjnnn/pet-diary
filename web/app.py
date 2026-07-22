@@ -40,7 +40,8 @@ def get_backend():
     return _backend
 
 
-def run_job(job_id: str, input_path: Path, out_dir: Path, date: str, lang: str) -> None:
+def run_job(job_id: str, input_path: Path, out_dir: Path, date: str, lang: str,
+            pet_name: str | None) -> None:
     job = _jobs[job_id]
 
     def log(msg: str) -> None:
@@ -52,7 +53,8 @@ def run_job(job_id: str, input_path: Path, out_dir: Path, date: str, lang: str) 
         with _gpu_lock:
             log("Starting the pipeline...")
             result = generate_diary(
-                input_path, backend, out_dir, date_label=date, lang=lang, log=log,
+                input_path, backend, out_dir, date_label=date, lang=lang,
+                pet_name=pet_name or None, log=log,
             )
         job["diary"] = result["diary"]
         job["diary_html"] = markdown.markdown(result["diary"])
@@ -78,6 +80,7 @@ async def create_job(
     files: list[UploadFile] = File(...),
     date: str = Form("오늘"),
     lang: str = Form("ko"),
+    pet_name: str = Form(""),
 ):
     valid = [f for f in files if Path(f.filename or "").suffix.lower() in VIDEO_EXTS]
     if not valid:
@@ -98,7 +101,8 @@ async def create_job(
     input_path = saved[0] if len(saved) == 1 else input_dir
 
     _jobs[job_id] = {"status": "running", "log": [], "queued": _gpu_lock.locked()}
-    background_tasks.add_task(run_job, job_id, input_path, job_dir / "out", date, lang)
+    background_tasks.add_task(run_job, job_id, input_path, job_dir / "out", date, lang,
+                              pet_name.strip())
     return {"job_id": job_id}
 
 

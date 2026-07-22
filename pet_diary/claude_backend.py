@@ -41,11 +41,12 @@ class ClaudeBackend:
         )
         return self._text_of(response)
 
-    def write_diary(self, date_label: str, observations: list[str], lang: str = "ko") -> str:
+    def write_diary(self, date_label: str, observations: list[str], lang: str = "ko",
+                    pet_name: str | None = None) -> str:
         response = self.client.messages.create(
             model=self.model,
             max_tokens=2048,
-            system=diary_system(lang),
+            system=diary_system(lang, pet_name),
             messages=[{
                 "role": "user",
                 "content": diary_user_text(date_label, observations, lang),

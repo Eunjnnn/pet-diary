@@ -16,6 +16,7 @@ def generate_diary(
     out_dir: Path,
     date_label: str = "오늘",
     lang: str = "ko",
+    pet_name: str | None = None,
     max_frames: int = 6,
     log: Callable[[str], None] = lambda msg: None,
 ) -> dict:
@@ -68,7 +69,7 @@ def generate_diary(
         raise ValueError("No clips with a pet visible — nothing to write about.")
 
     log("Writing today's diary...")
-    entry = backend.write_diary(date_label, observations, lang=lang)
+    entry = backend.write_diary(date_label, observations, lang=lang, pet_name=pet_name)
     (out_dir / "diary.md").write_text(entry, encoding="utf-8")
 
     return {
