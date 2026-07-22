@@ -1,6 +1,8 @@
 .venv/
 __pycache__/
 outputs/
+outputs_long/
 data/samples/*.webm
 data/samples/*.mp4
 .env
+web_jobs/

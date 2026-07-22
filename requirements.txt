@@ -1,1 +1,6 @@
 anthropic
+fastapi
+uvicorn
+python-multipart
+markdown
+opencv-python-headless

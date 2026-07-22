@@ -47,6 +47,15 @@ Requires `ffmpeg` / `ffprobe` on PATH. 🍿
 - `--backend local|claude` — pick your brain 🧠
 - `--max-frames 6` — snapshots per clip 📸
 
+### 🌐 Or use the web page
+
+```bash
+CUDA_VISIBLE_DEVICES=1 .venv/bin/uvicorn web.app:app --host 0.0.0.0 --port 8899
+```
+
+Open `http://localhost:8899`, drag in a recording (or several clips), and wait
+for your pet to finish writing. ✍️🐾 Uploads never leave the machine.
+
 Then open `outputs/diary.md` and meet your pet's inner monologue:
 
 > **고양이의 하루일기** 🐱

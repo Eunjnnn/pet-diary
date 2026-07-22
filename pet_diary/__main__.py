@@ -18,10 +18,7 @@ import argparse
 import sys
 from pathlib import Path
 
-from .keyframes import extract_keyframes
-from .prompts import NO_PET_SENTINEL
-
-VIDEO_EXTS = {".mp4", ".webm", ".mov", ".mkv", ".avi"}
+from .pipeline import generate_diary
 
 
 def make_backend(name: str):
@@ -43,55 +40,21 @@ def main() -> int:
     parser.add_argument("--max-frames", type=int, default=6, help="Keyframes per clip")
     args = parser.parse_args()
 
-    time_labels: dict[str, str] = {}
-    if args.video_path.is_file():
-        from .events import detect_events, extract_event_clips
-
-        print("[events   ] detecting motion events")
-        events = detect_events(args.video_path)
-        if not events:
-            print("No motion events found in the recording.", file=sys.stderr)
-            return 1
-        videos = extract_event_clips(args.video_path, events, args.out / "events")
-        time_labels = {c.stem: e.label() for c, e in zip(videos, events)}
-        print(f"[events   ] {len(events)} event(s): "
-              + ", ".join(e.label() for e in events))
-    else:
-        videos = sorted(p for p in args.video_path.iterdir()
-                        if p.suffix.lower() in VIDEO_EXTS)
-        if not videos:
-            print(f"No videos found in {args.video_path}", file=sys.stderr)
-            return 1
-
     print(f"[backend  ] loading '{args.backend}'")
     backend = make_backend(args.backend)
 
-    frames_dir = args.out / "keyframes"
-    args.out.mkdir(parents=True, exist_ok=True)
-
-    observations = []
-    for video in videos:
-        print(f"[keyframes] {video.name}")
-        frames = extract_keyframes(video, frames_dir, max_frames=args.max_frames)
-        print(f"[caption  ] {video.name} ({len(frames)} frames)")
-        obs = backend.caption_clip(video.stem, frames)
-        (args.out / f"{video.stem}.caption.txt").write_text(obs, encoding="utf-8")
-        if obs.strip().startswith(NO_PET_SENTINEL):
-            print(f"[skip     ] {video.name}: no pet visible")
-            continue
-        label = time_labels.get(video.stem)
-        observations.append(f"[Time {label}] {obs}" if label else obs)
-
-    if not observations:
-        print("No clips with a pet visible — nothing to write about.", file=sys.stderr)
+    try:
+        result = generate_diary(
+            args.video_path, backend, args.out,
+            date_label=args.date, lang=args.lang, max_frames=args.max_frames,
+            log=lambda msg: print(f"[pipeline ] {msg}"),
+        )
+    except ValueError as e:
+        print(str(e), file=sys.stderr)
         return 1
 
-    print("[diary    ] composing entry")
-    entry = backend.write_diary(args.date, observations, lang=args.lang)
-    diary_path = args.out / "diary.md"
-    diary_path.write_text(entry, encoding="utf-8")
-    print(f"\n=== {diary_path} ===\n")
-    print(entry)
+    print(f"\n=== {args.out / 'diary.md'} ===\n")
+    print(result["diary"])
     return 0
 
 

@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>🐾 pet-diary</title>
+<style>
+  :root {
+    --bg: #fdf6ec; --card: #ffffff; --ink: #4a3f35; --sub: #9c8b7a;
+    --accent: #f4a261; --accent-dark: #e07b39; --paw: #ffe8d1;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: "Apple SD Gothic Neo", "Noto Sans KR", system-ui, sans-serif;
+    background: var(--bg); color: var(--ink);
+    min-height: 100vh; display: flex; flex-direction: column; align-items: center;
+    padding: 40px 16px;
+  }
+  h1 { font-size: 2rem; margin-bottom: 4px; }
+  .tagline { color: var(--sub); margin-bottom: 28px; }
+  .card {
+    background: var(--card); border-radius: 20px; padding: 28px;
+    width: 100%; max-width: 680px; box-shadow: 0 6px 24px rgba(160,120,80,.12);
+    margin-bottom: 20px;
+  }
+  .drop {
+    border: 2px dashed var(--accent); border-radius: 16px; padding: 36px 16px;
+    text-align: center; cursor: pointer; background: var(--paw);
+    transition: background .15s;
+  }
+  .drop:hover, .drop.drag { background: #ffdcb8; }
+  .drop .big { font-size: 2.4rem; }
+  .drop p { color: var(--sub); margin-top: 6px; font-size: .92rem; }
+  .picked { margin-top: 10px; font-size: .9rem; color: var(--ink); }
+  .row { display: flex; gap: 12px; margin-top: 18px; flex-wrap: wrap; }
+  .row label { font-size: .85rem; color: var(--sub); display: block; margin-bottom: 4px; }
+  input[type=date], select {
+    padding: 9px 12px; border: 1.5px solid #eadbc8; border-radius: 10px;
+    background: #fff; color: var(--ink); font-size: .95rem;
+  }
+  button {
+    margin-top: 20px; width: 100%; padding: 14px; border: 0; border-radius: 12px;
+    background: var(--accent); color: #fff; font-size: 1.05rem; font-weight: 700;
+    cursor: pointer; transition: background .15s;
+  }
+  button:hover { background: var(--accent-dark); }
+  button:disabled { background: #e5d5c2; cursor: not-allowed; }
+  .log { font-family: ui-monospace, monospace; font-size: .85rem; color: var(--sub);
+         white-space: pre-wrap; line-height: 1.7; }
+  .log .last { color: var(--accent-dark); font-weight: 600; }
+  .spinner { display: inline-block; animation: bounce 1s infinite; }
+  @keyframes bounce { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-4px)} }
+  .diary { line-height: 1.85; font-size: 1.02rem; }
+  .diary h1, .diary h2 { margin-bottom: 12px; }
+  .diary p { margin-bottom: 12px; }
+  .gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px,1fr));
+             gap: 8px; margin-top: 14px; }
+  .gallery img { width: 100%; border-radius: 10px; display: block; }
+  details { margin-top: 14px; }
+  summary { cursor: pointer; color: var(--sub); font-size: .9rem; }
+  .caption-item { font-size: .88rem; color: var(--sub); margin: 10px 0; line-height: 1.6; }
+  .caption-item b { color: var(--ink); }
+  .error { color: #c0392b; font-weight: 600; }
+  .hidden { display: none; }
+  footer { color: var(--sub); font-size: .85rem; margin-top: 10px; }
+</style>
+</head>
+<body>
+
+<h1>🐾 pet-diary</h1>
+<p class="tagline">영상을 올리면, 우리 애기가 오늘 하루 일기를 써줘요 🐱🐶</p>
+
+<div class="card" id="uploadCard">
+  <div class="drop" id="drop">
+    <div class="big">🎬🐈</div>
+    <div><b>영상을 끌어다 놓거나 클릭해서 선택</b></div>
+    <p>하루치 긴 녹화 1개 → 자동으로 이벤트를 찾아요 · 짧은 클립 여러 개도 OK</p>
+    <input type="file" id="file" accept="video/*" multiple hidden>
+    <div class="picked" id="picked"></div>
+  </div>
+  <div class="row">
+    <div><label>📅 날짜</label><input type="date" id="date"></div>
+    <div><label>🌏 일기 언어</label>
+      <select id="lang"><option value="ko">한국어</option><option value="en">English</option></select>
+    </div>
+  </div>
+  <button id="go" disabled>일기 부탁하기 ✍️</button>
+</div>
+
+<div class="card hidden" id="statusCard">
+  <div><span class="spinner">🐾</span> <b>일기 쓰는 중...</b> (영상 길이에 따라 몇 분 걸려요)</div>
+  <div class="log" id="log" style="margin-top:12px"></div>
+</div>
+
+<div class="card hidden" id="resultCard">
+  <div class="diary" id="diary"></div>
+  <div class="gallery" id="gallery"></div>
+  <details id="capsBox"><summary>👀 AI가 본 장면 기록 (관찰 로그)</summary><div id="caps"></div></details>
+</div>
+
+<footer>Made with 💖 · runs on a local VLM, your videos stay on this machine</footer>
+
+<script>
+const drop = document.getElementById('drop');
+const fileInput = document.getElementById('file');
+const picked = document.getElementById('picked');
+const go = document.getElementById('go');
+const dateEl = document.getElementById('date');
+dateEl.valueAsDate = new Date();
+
+let files = [];
+drop.addEventListener('click', () => fileInput.click());
+drop.addEventListener('dragover', e => { e.preventDefault(); drop.classList.add('drag'); });
+drop.addEventListener('dragleave', () => drop.classList.remove('drag'));
+drop.addEventListener('drop', e => {
+  e.preventDefault(); drop.classList.remove('drag');
+  setFiles([...e.dataTransfer.files]);
+});
+fileInput.addEventListener('change', () => setFiles([...fileInput.files]));
+
+function setFiles(fs) {
+  files = fs.filter(f => f.type.startsWith('video/') || /\.(mp4|webm|mov|mkv|avi)$/i.test(f.name));
+  picked.textContent = files.length
+    ? `🎞️ ${files.map(f => f.name).join(', ')}`
+    : '영상 파일이 아니에요 🙀';
+  go.disabled = files.length === 0;
+}
+
+go.addEventListener('click', async () => {
+  go.disabled = true;
+  const fd = new FormData();
+  files.forEach(f => fd.append('files', f));
+  fd.append('date', dateEl.value || '오늘');
+  fd.append('lang', document.getElementById('lang').value);
+
+  document.getElementById('uploadCard').classList.add('hidden');
+  document.getElementById('statusCard').classList.remove('hidden');
+
+  const res = await fetch('/api/jobs', { method: 'POST', body: fd });
+  if (!res.ok) { showError((await res.json()).detail || 'upload failed'); return; }
+  const { job_id } = await res.json();
+  poll(job_id);
+});
+
+async function poll(id) {
+  const logEl = document.getElementById('log');
+  const timer = setInterval(async () => {
+    const job = await (await fetch(`/api/jobs/${id}`)).json();
+    logEl.innerHTML = job.log.map((l, i) =>
+      i === job.log.length - 1 ? `<span class="last">🐈 ${esc(l)}</span>` : `· ${esc(l)}`
+    ).join('\n');
+    if (job.status === 'done') { clearInterval(timer); showResult(job); }
+    if (job.status === 'error') { clearInterval(timer); showError(job.error); }
+  }, 2000);
+}
+
+function showResult(job) {
+  document.getElementById('statusCard').classList.add('hidden');
+  const card = document.getElementById('resultCard');
+  card.classList.remove('hidden');
+  document.getElementById('diary').innerHTML = job.diary_html;
+
+  const gallery = document.getElementById('gallery');
+  const shots = Object.values(job.keyframes).flat();
+  const step = Math.max(1, Math.floor(shots.length / 8));
+  shots.filter((_, i) => i % step === 0).slice(0, 8)
+       .forEach(src => { const img = new Image(); img.src = src; gallery.appendChild(img); });
+
+  const caps = document.getElementById('caps');
+  caps.innerHTML = Object.entries(job.captions).map(([clip, text]) => {
+    const t = job.time_labels[clip] ? ` <small>(${job.time_labels[clip]})</small>` : '';
+    return `<div class="caption-item"><b>${esc(clip)}</b>${t}<br>${esc(text)}</div>`;
+  }).join('');
+}
+
+function showError(msg) {
+  document.getElementById('statusCard').classList.remove('hidden');
+  document.getElementById('log').innerHTML += `\n<span class="error">😿 ${esc(msg)}</span>`;
+}
+
+const esc = s => s.replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+</script>
+</body>
+</html>
