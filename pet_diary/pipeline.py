@@ -17,7 +17,7 @@ def generate_diary(
     date_label: str = "오늘",
     lang: str = "ko",
     pet_name: str | None = None,
-    max_frames: int = 6,
+    max_frames: int = 8,
     log: Callable[[str], None] = lambda msg: None,
 ) -> dict:
     """Run the full pipeline for one recording file or a directory of clips.

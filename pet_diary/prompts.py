@@ -13,8 +13,9 @@ CAPTION_SYSTEM = (
     f"If no animal is visible in any frame, reply with exactly '{NO_PET_SENTINEL}' and nothing else. "
     "Otherwise describe factually in English: which animals appear (species, coat "
     "color/pattern), what they are doing, where they are, and how the activity "
-    "changes across frames. Do not invent details that are not visible, and do "
-    "not repeat yourself."
+    "changes across frames. STRICT RULES: report only what is clearly visible in "
+    "the frames; never guess causes, intentions, or off-screen events; if something "
+    "is ambiguous, write 'unclear' instead of guessing; do not repeat yourself."
 )
 
 

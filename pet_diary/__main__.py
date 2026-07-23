@@ -38,7 +38,7 @@ def main() -> int:
     parser.add_argument("--date", default="오늘", help="Date label for the diary entry")
     parser.add_argument("--lang", choices=["ko", "en"], default="ko", help="Diary language")
     parser.add_argument("--name", default=None, help="Pet name (diary is written as this pet)")
-    parser.add_argument("--max-frames", type=int, default=6, help="Keyframes per clip")
+    parser.add_argument("--max-frames", type=int, default=8, help="Keyframes per clip")
     args = parser.parse_args()
 
     print(f"[backend  ] loading '{args.backend}'")

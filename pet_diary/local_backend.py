@@ -18,7 +18,8 @@ class LocalVLMBackend:
         )
         self.processor = AutoProcessor.from_pretrained(model_id)
 
-    def _chat(self, system: str, user_content: list[dict], max_new_tokens: int) -> str:
+    def _chat(self, system: str, user_content: list[dict], max_new_tokens: int,
+              creative: bool = False) -> str:
         from qwen_vl_utils import process_vision_info
 
         messages = [
@@ -37,13 +38,18 @@ class LocalVLMBackend:
             return_tensors="pt",
         ).to(self.model.device)
 
+        # Captions must be factual -> greedy decoding; only the diary uses
+        # sampling for a livelier voice. repetition_penalty stays on both to
+        # prevent degenerate loops.
+        if creative:
+            gen_kwargs = dict(do_sample=True, temperature=0.7, top_p=0.9)
+        else:
+            gen_kwargs = dict(do_sample=False)
         output_ids = self.model.generate(
             **inputs,
             max_new_tokens=max_new_tokens,
-            do_sample=True,
-            temperature=0.7,
-            top_p=0.9,
             repetition_penalty=1.1,
+            **gen_kwargs,
         )
         trimmed = [
             out[len(inp):] for inp, out in zip(inputs.input_ids, output_ids)
@@ -58,9 +64,10 @@ class LocalVLMBackend:
             content.append({"type": "text", "text": f"[Frame {i}/{len(frames)}]"})
             content.append({"type": "image", "image": f"file://{frame.resolve()}"})
         content.append({"type": "text", "text": caption_user_text(clip_name)})
-        return self._chat(CAPTION_SYSTEM, content, max_new_tokens=512)
+        return self._chat(CAPTION_SYSTEM, content, max_new_tokens=512, creative=False)
 
     def write_diary(self, date_label: str, observations: list[str], lang: str = "ko",
                     pet_name: str | None = None) -> str:
         content = [{"type": "text", "text": diary_user_text(date_label, observations, lang)}]
-        return self._chat(diary_system(lang, pet_name), content, max_new_tokens=1024)
+        return self._chat(diary_system(lang, pet_name), content, max_new_tokens=1024,
+                          creative=True)
