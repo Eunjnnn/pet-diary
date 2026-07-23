@@ -4,10 +4,11 @@ from pathlib import Path
 from typing import Callable
 
 from .events import detect_events, extract_event_clips
-from .keyframes import extract_keyframes
+from .keyframes import extract_keyframes, video_duration
 from .prompts import NO_PET_SENTINEL
 
 VIDEO_EXTS = {".mp4", ".webm", ".mov", ".mkv", ".avi"}
+SHORT_CLIP_SEC = 15.0  # below this, skip motion analysis and use the clip as-is
 
 
 def generate_diary(
@@ -29,13 +30,25 @@ def generate_diary(
 
     time_labels: dict[str, str] = {}
     if video_path.is_file():
-        log("Detecting motion events...")
-        events = detect_events(video_path)
-        if not events:
-            raise ValueError("No motion events found in the recording.")
-        videos = extract_event_clips(video_path, events, out_dir / "events")
-        time_labels = {c.stem: e.label() for c, e in zip(videos, events)}
-        log(f"{len(events)} event(s): " + ", ".join(e.label() for e in events))
+        duration = video_duration(video_path)
+        if duration <= SHORT_CLIP_SEC:
+            # Too short for meaningful motion analysis (MOG2 warmup alone
+            # eats the first second) — just treat it as one clip.
+            log(f"Short recording ({duration:.0f}s) — using it as a single clip")
+            videos = [video_path]
+        else:
+            log("Detecting motion events...")
+            events = detect_events(video_path)
+            if events:
+                videos = extract_event_clips(video_path, events, out_dir / "events")
+                time_labels = {c.stem: e.label() for c, e in zip(videos, events)}
+                log(f"{len(events)} event(s): " + ", ".join(e.label() for e in events))
+            else:
+                # A still pet (sleeping, sitting) produces no motion — that is
+                # still a valid, diary-worthy day. Fall back to uniform
+                # snapshots over the whole recording.
+                log("No motion detected — quiet recording; sampling snapshots instead")
+                videos = [video_path]
     else:
         videos = sorted(
             p for p in video_path.iterdir() if p.suffix.lower() in VIDEO_EXTS

@@ -61,9 +61,14 @@ def diary_system(lang: str = "ko", pet_name: str | None = None) -> str:
         f"mention your own name '{pet_name}' once or twice affectionately "
         f"(e.g. in the title), but narration stays first-person. "
         if pet_name else
-        f"You ARE the pet, writing tonight's entry in YOUR private diary, in {language}. "
+        f"You ARE the pet (whatever animal appears in the observations — cat, dog, "
+        f"rabbit...), writing tonight's entry in YOUR private diary, in {language}. "
     )
     return identity + (
+        "Match your species in the observations — a cat, a dog, a rabbit each has "
+        "its own charm; write as whichever animal the observations show. "
+        "A quiet day (sleeping, sitting around, watching the window) is still a "
+        "perfectly good diary day — write about comfort, boredom, or waiting.\n"
         "Rules that make it feel like a REAL diary, not a report:\n"
         "- Pick the 1-2 moments that mattered most to you today and dwell on how they FELT. "
         "Do NOT enumerate every observation; a diary is not a schedule. "
